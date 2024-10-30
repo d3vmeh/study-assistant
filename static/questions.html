@@ -3,89 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Study Assistant</title>
+    <title>SAT Reading Practice</title>
     <style>
-        .question-container {
-            margin: 20px;
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
             padding: 20px;
-            border: 1px solid #ccc;
+            background-color: #f5f7fa;
+        }
+
+        .passage-container {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .passage-text {
+            font-size: 1.1em;
+            line-height: 1.8;
+            margin-bottom: 30px;
+            color: #2d3748;
+            padding: 20px;
+            background-color: #f8fafc;
             border-radius: 8px;
+            border-left: 4px solid #4299e1;
+        }
+
+        .underlined {
+            text-decoration: underline;
+            color: #4299e1;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .underlined:hover {
+            color: #2b6cb0;
+        }
+
+        .question-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .question-container h3 {
+            color: #2d3748;
+            margin-top: 0;
+            font-size: 1.1em;
+            font-weight: 600;
         }
 
         .options button {
             display: block;
-            margin: 10px 0;
-            padding: 10px;
-            width: 300px;
+            width: 100%;
+            padding: 12px 15px;
+            margin: 8px 0;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            background-color: white;
             text-align: left;
-            border: 1px solid #ccc;
-            border-radius: 4px;
             cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1em;
+        }
+
+        .options button:hover {
+            background-color: #f7fafc;
+            border-color: #4299e1;
         }
 
         .correct {
-            background-color: #90EE90 !important;
+            background-color: #9ae6b4 !important;
+            border-color: #48bb78 !important;
+            color: #276749 !important;
         }
 
         .incorrect {
-            background-color: #ffcccb !important;
-        }
-
-        .feedback {
-            color: #008000;
-            margin-left: 10px;
-            display: none;
+            background-color: #feb2b2 !important;
+            border-color: #f56565 !important;
+            color: #c53030 !important;
         }
 
         .chat-container {
             margin-top: 20px;
-            border-top: 1px solid #ccc;
-            padding-top: 10px;
-        }
-
-        .chat-messages {
-            max-height: 200px;
-            overflow-y: auto;
-            margin-bottom: 10px;
-        }
-
-        .chat-input {
-            width: 100%;
-            padding: 8px;
-            box-sizing: border-box;
-        }
-
-        .user-message {
-            background-color: #e6f2ff;
-            padding: 8px;
-            margin: 5px 0;
-            border-radius: 4px;
-        }
-
-        .ai-message {
-            background-color: #f0f0f0;
-            padding: 8px;
-            margin: 5px 0;
-            border-radius: 4px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 20px;
         }
 
         .chat-controls {
             display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
+            justify-content: flex-end;
+            margin-bottom: 15px;
         }
 
         .clear-chat {
-            background-color: #ff6b6b;
+            background-color: #fc8181;
             color: white;
             border: none;
-            padding: 5px 10px;
-            border-radius: 4px;
+            padding: 8px 16px;
+            border-radius: 6px;
             cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.2s;
         }
 
         .clear-chat:hover {
-            background-color: #ff5252;
+            background-color: #f56565;
+        }
+
+        .chat-messages {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #f8fafc;
+            border-radius: 8px;
+        }
+
+        .chat-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.2s;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: #4299e1;
+        }
+
+        .user-message, .ai-message {
+            padding: 10px 15px;
+            margin: 8px 0;
+            border-radius: 8px;
+            max-width: 80%;
+        }
+
+        .user-message {
+            background-color: #bee3f8;
+            color: #2c5282;
+            margin-left: auto;
+        }
+
+        .ai-message {
+            background-color: #e2e8f0;
+            color: #2d3748;
+        }
+
+        .feedback {
+            color: #48bb78;
+            margin-left: 10px;
+            font-weight: 500;
+            display: none;
+        }
+
+        .error {
+            background-color: #fff5f5;
+            color: #c53030;
+            border: 1px solid #feb2b2;
+        }
+
+        /* Loading indicator */
+        .loading {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #718096;
+            font-style: italic;
+        }
+
+        .loading::after {
+            content: "...";
+            animation: loading 1.5s infinite;
+        }
+
+        @keyframes loading {
+            0% { content: "."; }
+            33% { content: ".."; }
+            66% { content: "..."; }
         }
     </style>
 </head>
@@ -93,27 +197,59 @@
     <div id="questions-container"></div>
 
     <script>
-        // Sample question bank
-        const questionBank = [
-            {
-                question: "What is the capital of France?",
-                options: ["London", "Paris", "Berlin", "Madrid"],
-                correct: 1
-            },
-            {
-                question: "Which planet is known as the Red Planet?",
-                options: ["Venus", "Jupiter", "Mars", "Saturn"],
-                correct: 2
-            }
-        ];
+        async function loadContent() {
+            const response = await fetch('/api/passages');
+            const passages = await response.json();
+            const container = document.getElementById('questions-container');
+            
+            passages.forEach(passage => {
+                const passageElement = createPassageElement(passage);
+                container.appendChild(passageElement);
+            });
+        }
 
-        function createQuestionElement(questionData, index) {
+        function createPassageElement(passageData) {
+            const container = document.createElement('div');
+            container.className = 'passage-container';
+
+            // Create passage text
+            const passageText = document.createElement('div');
+            passageText.className = 'passage-text';
+            
+            // Process the passage text to highlight underlined portions
+            let processedText = passageData.text;
+            passageData.questions.forEach(question => {
+                if (question.underlined_text) {
+                    processedText = processedText.replace(
+                        question.underlined_text,
+                        `<span class="underlined" data-question-id="${question.id}">${question.underlined_text}</span>`
+                    );
+                }
+            });
+            passageText.innerHTML = processedText;
+
+            container.appendChild(passageText);
+
+            // Create questions section
+            const questionsSection = document.createElement('div');
+            questionsSection.className = 'questions-section';
+            
+            passageData.questions.forEach(question => {
+                const questionElement = createQuestionElement(question, passageData);
+                questionsSection.appendChild(questionElement);
+            });
+
+            container.appendChild(questionsSection);
+            return container;
+        }
+
+        function createQuestionElement(questionData, passageData) {
             const container = document.createElement('div');
             container.className = 'question-container';
+            container.id = `question-${questionData.id}`;
 
-            // Question text
             const questionText = document.createElement('h3');
-            questionText.textContent = `Question ${index + 1}: ${questionData.question}`;
+            questionText.textContent = `Question ${questionData.id}: ${questionData.text}`;
             container.appendChild(questionText);
 
             // Options
@@ -196,8 +332,8 @@
                     try {
                         // Add loading indicator
                         const loadingDiv = document.createElement('div');
-                        loadingDiv.className = 'ai-message';
-                        loadingDiv.textContent = 'Thinking...';
+                        loadingDiv.className = 'ai-message loading';
+                        loadingDiv.textContent = 'AI is thinking';
                         chatMessages.appendChild(loadingDiv);
 
                         // Send message to backend with chat history
@@ -207,9 +343,11 @@
                                 'Content-Type': 'application/json',
                             },
                             body: JSON.stringify({
-                                question: questionData.question,
+                                question: questionData.text,
                                 user_message: userMessage,
-                                chat_history: chatHistory
+                                chat_history: chatHistory,
+                                passage_text: passageData.text,
+                                underlined_text: questionData.underlined_text
                             })
                         });
                         
@@ -253,13 +391,8 @@
             return container;
         }
 
-        // Initialize questions
-        window.onload = () => {
-            const container = document.getElementById('questions-container');
-            questionBank.forEach((question, index) => {
-                container.appendChild(createQuestionElement(question, index));
-            });
-        };
+        // Initialize content
+        window.onload = loadContent;
     </script>
 </body>
 </html>

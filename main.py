@@ -17,27 +17,62 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 # Data models
-class Question(BaseModel):
-    question: str
-    options: List[str]
-    correct: int
-
 class ChatMessage(BaseModel):
     question: str
     user_message: str
-    chat_history: List[dict]  # Add this to track conversation history
+    chat_history: List[dict]
+    passage_text: str = None
+    underlined_text: str = None
 
-# Sample question bank
-questions = [
-    Question(
-        question="What is the capital of France?",
-        options=["London", "Paris", "Berlin", "Madrid"],
-        correct=1
-    ),
-    Question(
-        question="Which planet is known as the Red Planet?",
-        options=["Venus", "Jupiter", "Mars", "Saturn"],
-        correct=2
+class Question(BaseModel):
+    id: int
+    text: str
+    options: List[str]
+    correct: int
+    passage_ref: str = None
+    underlined_text: str = None
+
+class Passage(BaseModel):
+    id: str
+    text: str
+    questions: List[Question]
+
+# Sample data structure
+passages = [
+    Passage(
+        id="passage1",
+        text="""The city council's decision to implement a new recycling program [1]was met with 
+        significant resistance from local business owners, who argued that the [2]additional costs 
+        would be prohibitively expensive. However, environmental advocates [3]pointed towards 
+        successful similar programs in neighboring cities as evidence of the potential benefits.""",
+        questions=[
+            Question(
+                id=1,
+                text="Which choice best maintains the formal tone of the passage?",
+                options=[
+                    "was met with",
+                    "ran into",
+                    "encountered",
+                    "faced"
+                ],
+                correct=0,
+                passage_ref="passage1",
+                underlined_text="was met with"
+            ),
+            Question(
+                id=2,
+                text="Which choice most effectively emphasizes the business owners' concerns?",
+                options=[
+                    "additional costs",
+                    "financial burden",
+                    "monetary requirements",
+                    "economic implications"
+                ],
+                correct=1,
+                passage_ref="passage1",
+                underlined_text="additional costs"
+            )
+        ]
     )
 ]
 
@@ -49,34 +84,40 @@ async def read_root():
 async def get_questions():
     return questions
 
-async def get_llm_response(question: str, user_message: str, chat_history: List[dict]) -> str:
+@app.get("/api/passages")
+async def get_passages():
+    return passages
+
+async def get_llm_response(question: str, user_message: str, chat_history: List[dict], passage_text: str = None, underlined_text: str = None) -> str:
     """
-    Get response from LLM with chat history context
+    Enhanced LLM response function that includes passage context
     """
     try:
-        system_prompt = f"""You are a helpful tutor assisting with the following question:
-        {question}
-        
-        Provide a clear, concise explanation that helps the student understand the topic better.
-        If they're asking for the direct answer, encourage them to think through it instead.
-        
-        Remember to maintain context from the previous conversation in this thread."""
+        context = f"""Passage: {passage_text}
 
-        # Convert chat history to OpenAI message format
+Question about the underlined text "{underlined_text}":
+{question}"""
+
+        system_prompt = f"""You are a helpful tutor assisting with a reading comprehension question.
+        
+        {context if passage_text else f"Question: {question}"}
+        
+        Provide clear explanations that help the student understand the reasoning behind the answer.
+        Focus on the specific context and how it relates to the question.
+        If they ask for the direct answer, guide them to think through it instead."""
+
         messages = [{"role": "system", "content": system_prompt}]
         
-        # Add chat history
         for msg in chat_history:
             messages.append({
                 "role": "user" if msg["isUser"] else "assistant",
                 "content": msg["message"]
             })
             
-        # Add current message
         messages.append({"role": "user", "content": user_message})
 
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=messages
         )
         return response.choices[0].message.content
