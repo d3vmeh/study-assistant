@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Study Assistant</title>
+    <style>
+        .question-container {
+            margin: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+
+        .options button {
+            display: block;
+            margin: 10px 0;
+            padding: 10px;
+            width: 300px;
+            text-align: left;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .correct {
+            background-color: #90EE90 !important;
+        }
+
+        .incorrect {
+            background-color: #ffcccb !important;
+        }
+
+        .feedback {
+            color: #008000;
+            margin-left: 10px;
+            display: none;
+        }
+
+        .chat-container {
+            margin-top: 20px;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+        }
+
+        .chat-messages {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+
+        .chat-input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+
+        .user-message {
+            background-color: #e6f2ff;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+        }
+
+        .ai-message {
+            background-color: #f0f0f0;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+        }
+
+        .chat-controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .clear-chat {
+            background-color: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .clear-chat:hover {
+            background-color: #ff5252;
+        }
+    </style>
+</head>
+<body>
+    <div id="questions-container"></div>
+
+    <script>
+        // Sample question bank
+        const questionBank = [
+            {
+                question: "What is the capital of France?",
+                options: ["London", "Paris", "Berlin", "Madrid"],
+                correct: 1
+            },
+            {
+                question: "Which planet is known as the Red Planet?",
+                options: ["Venus", "Jupiter", "Mars", "Saturn"],
+                correct: 2
+            }
+        ];
+
+        function createQuestionElement(questionData, index) {
+            const container = document.createElement('div');
+            container.className = 'question-container';
+
+            // Question text
+            const questionText = document.createElement('h3');
+            questionText.textContent = `Question ${index + 1}: ${questionData.question}`;
+            container.appendChild(questionText);
+
+            // Options
+            const optionsDiv = document.createElement('div');
+            optionsDiv.className = 'options';
+            
+            const feedback = document.createElement('span');
+            feedback.className = 'feedback';
+            feedback.textContent = 'Correct!';
+
+            questionData.options.forEach((option, i) => {
+                const button = document.createElement('button');
+                button.textContent = `${String.fromCharCode(65 + i)}. ${option}`;
+                button.onclick = () => {
+                    if (i === questionData.correct) {
+                        button.classList.add('correct');
+                        feedback.style.display = 'inline';
+                    } else {
+                        button.classList.add('incorrect');
+                    }
+                };
+                optionsDiv.appendChild(button);
+            });
+
+            container.appendChild(optionsDiv);
+            container.appendChild(feedback);
+
+            // Chat section
+            const chatContainer = document.createElement('div');
+            chatContainer.className = 'chat-container';
+            
+            // Add chat controls div
+            const chatControls = document.createElement('div');
+            chatControls.className = 'chat-controls';
+            
+            // Add clear button
+            const clearButton = document.createElement('button');
+            clearButton.className = 'clear-chat';
+            clearButton.textContent = 'Clear Chat History';
+            clearButton.onclick = () => {
+                chatMessages.innerHTML = ''; // Clear the chat display
+                chatHistory.length = 0;      // Clear the chat history array
+            };
+            
+            chatControls.appendChild(clearButton);
+            
+            const chatMessages = document.createElement('div');
+            chatMessages.className = 'chat-messages';
+            
+            const chatHistory = [];
+            
+            // Add the controls before the messages
+            chatContainer.appendChild(chatControls);
+            chatContainer.appendChild(chatMessages);
+            
+            const chatInput = document.createElement('input');
+            chatInput.type = 'text';
+            chatInput.className = 'chat-input';
+            chatInput.placeholder = 'Ask a question about this topic...';
+            
+            chatInput.addEventListener('keypress', async (e) => {
+                if (e.key === 'Enter') {
+                    const userMessage = chatInput.value;
+                    
+                    // Add user message to chat
+                    const userDiv = document.createElement('div');
+                    userDiv.className = 'user-message';
+                    userDiv.textContent = userMessage;
+                    chatMessages.appendChild(userDiv);
+                    
+                    // Add to chat history
+                    chatHistory.push({
+                        message: userMessage,
+                        isUser: true
+                    });
+                    
+                    // Clear input
+                    chatInput.value = '';
+                    
+                    try {
+                        // Add loading indicator
+                        const loadingDiv = document.createElement('div');
+                        loadingDiv.className = 'ai-message';
+                        loadingDiv.textContent = 'Thinking...';
+                        chatMessages.appendChild(loadingDiv);
+
+                        // Send message to backend with chat history
+                        const response = await fetch('/api/chat', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                question: questionData.question,
+                                user_message: userMessage,
+                                chat_history: chatHistory
+                            })
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+
+                        const data = await response.json();
+                        
+                        // Remove loading indicator
+                        chatMessages.removeChild(loadingDiv);
+                        
+                        // Add AI response to chat
+                        const aiDiv = document.createElement('div');
+                        aiDiv.className = 'ai-message';
+                        aiDiv.textContent = data.response;
+                        chatMessages.appendChild(aiDiv);
+                        
+                        // Add to chat history
+                        chatHistory.push({
+                            message: data.response,
+                            isUser: false
+                        });
+                    } catch (error) {
+                        console.error('Error:', error);
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'ai-message error';
+                        errorDiv.textContent = 'Sorry, there was an error processing your message.';
+                        chatMessages.appendChild(errorDiv);
+                    }
+                    
+                    // Scroll to bottom
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }
+            });
+
+            chatContainer.appendChild(chatMessages);
+            chatContainer.appendChild(chatInput);
+            container.appendChild(chatContainer);
+
+            return container;
+        }
+
+        // Initialize questions
+        window.onload = () => {
+            const container = document.getElementById('questions-container');
+            questionBank.forEach((question, index) => {
+                container.appendChild(createQuestionElement(question, index));
+            });
+        };
+    </script>
+</body>
+</html>
